@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NAAD — Noise Adaptive AI for Defence | The Fifth Law · SIH 2026</title>
+<meta name="description" content="Hybrid AI-driven active noise cancellation for defence communication. DeepFilterNet3 on Raspberry Pi 5.">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#070b12;--panel:#0d1420;--line:#1c2a3f;--tx:#e6edf7;--mut:#8497b3;--cy:#22d3ee;--am:#fbbf24;--gr:#4ade80;--rd:#f87171}
+*{box-sizing:border-box;margin:0}html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--tx);font:16px/1.6 'Space Grotesk',system-ui,sans-serif;background-image:radial-gradient(circle at 20% -10%,#0e2a3a 0,transparent 45%),radial-gradient(circle at 90% 10%,#241a3d 0,transparent 40%)}
+.mono{font-family:'JetBrains Mono',monospace}
+nav{position:sticky;top:0;z-index:9;display:flex;justify-content:space-between;align-items:center;padding:14px 5vw;background:#070b12cc;backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+nav b{letter-spacing:.12em}nav a{color:var(--mut);text-decoration:none;margin-left:22px;font-size:14px}nav a:hover{color:var(--cy)}
+.badge{border:1px solid var(--line);border-radius:99px;padding:4px 12px;font-size:12px;color:var(--cy)}
+section{padding:80px 5vw;max-width:1200px;margin:auto}
+h1{font-size:clamp(42px,7vw,88px);line-height:1;letter-spacing:-.03em}
+h1 span{background:linear-gradient(90deg,var(--cy),var(--am));-webkit-background-clip:text;color:transparent}
+h2{font-size:clamp(26px,4vw,40px);margin-bottom:8px;letter-spacing:-.02em}
+.sub{color:var(--mut);max-width:680px}.eyebrow{color:var(--cy);font-size:13px;letter-spacing:.2em;text-transform:uppercase;margin-bottom:14px}
+.hero{padding-top:90px;position:relative}
+#stage3d{position:absolute;inset:0;pointer-events:none;z-index:0} /* reserved: 3D scene mounts here later */
+.hero>*:not(#stage3d){position:relative;z-index:1}
+.stats{display:flex;gap:14px;flex-wrap:wrap;margin-top:36px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 20px}
+.stat b{display:block;font-size:24px;color:var(--cy)}.stat small{color:var(--mut)}
+.btn{display:inline-block;background:var(--cy);color:#04222a;font-weight:700;border:0;border-radius:10px;padding:12px 22px;cursor:pointer;text-decoration:none;font:600 15px 'Space Grotesk'}
+.btn.ghost{background:transparent;color:var(--tx);border:1px solid var(--line)}.btn:hover{filter:brightness(1.1)}
+.cta{margin-top:30px;display:flex;gap:12px;flex-wrap:wrap}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:24px}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));margin-top:30px}
+#drop{border:2px dashed #2b3f5e;border-radius:16px;padding:34px;text-align:center;cursor:pointer;transition:.2s;margin:22px 0}
+#drop.on,#drop:hover{border-color:var(--cy);background:#22d3ee0d}
+#drop p{color:var(--mut);font-size:14px}
+.pipe{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 20px}
+.pipe div{flex:1;min-width:120px;text-align:center;padding:10px 6px;border:1px solid var(--line);border-radius:10px;font-size:13px;color:var(--mut);transition:.3s}
+.pipe div.run{border-color:var(--am);color:var(--am);box-shadow:0 0 18px #fbbf2433}
+.pipe div.ok{border-color:var(--gr);color:var(--gr)}
+#out{display:none}
+.viz{display:grid;gap:14px;grid-template-columns:1fr 1fr}
+@media(max-width:800px){.viz{grid-template-columns:1fr}nav a{display:none}}
+.pane{position:relative;background:#050810;border:1px solid var(--line);border-radius:12px;padding:10px}
+.pane h4{font-size:12px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px}
+.pane canvas{width:100%;height:120px;display:block;border-radius:6px}
+.ph{position:absolute;top:34px;bottom:10px;width:2px;background:#fff;opacity:.8;left:10px;pointer-events:none}
+.toggle{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-right:12px}
+.toggle button{background:none;border:0;color:var(--mut);padding:10px 18px;cursor:pointer;font:600 14px 'Space Grotesk'}
+.toggle button.a{background:var(--cy);color:#04222a}.toggle button.a.n{background:var(--rd);color:#2a0606}
+.ctl{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:18px 0}
+.met{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.met div{border:1px solid var(--line);border-radius:12px;padding:12px}.met b{font-size:22px;color:var(--gr);display:block}.met small{color:var(--mut)}
+#note{color:var(--am);font-size:13px;margin-top:8px;display:none}
+.flow{display:flex;flex-wrap:wrap;gap:0;margin-top:26px}
+.flow div{flex:1;min-width:150px;padding:18px 14px;text-align:center;font-weight:600;clip-path:polygon(0 0,90% 0,100% 50%,90% 100%,0 100%,10% 50%);color:#06121a}
+.cmp{display:grid;grid-template-columns:1fr auto 1fr;gap:10px 14px;align-items:center;margin-top:28px}
+.cmp .c{background:#f8717122;border:1px solid #f8717166;border-radius:10px;padding:12px 16px}
+.cmp .s{background:#4ade8022;border:1px solid #4ade8066;border-radius:10px;padding:12px 16px}
+.cmp .ar{color:var(--am);font-size:22px}
+@media(max-width:640px){.cmp{grid-template-columns:1fr}.cmp .ar{display:none}}
+.card h3{font-size:17px;margin:4px 0}.card p{color:var(--mut);font-size:14px}.ic{font-size:26px}
+footer{border-top:1px solid var(--line);padding:34px 5vw;text-align:center;color:var(--mut);font-size:14px}
+</style></head><body>
+<nav><b>NAAD</b><div><a href="#demo">Live Demo</a><a href="#tech">Pipeline</a><a href="#why">Why NAAD</a><a href="#hw">Hardware</a><span class="badge" style="margin-left:22px">SIH 2026</span></div></nav>
+
+<section class="hero"><div id="stage3d"></div>
+<p class="eyebrow mono">Team The Fifth Law · Smart India Hackathon 2026</p>
+<h1>Noise Adaptive<br><span>AI for Defence</span></h1>
+<p class="sub" style="margin-top:22px;font-size:18px">A hybrid AI-driven active noise cancellation system that suppresses continuous <i>and</i> sudden impulsive noise while preserving speech intelligibility — running fully on the edge.</p>
+<div class="cta"><a class="btn" href="#demo">Try the enhancer ↓</a><a class="btn ghost" href="#tech">See the pipeline</a></div>
+<div class="stats"><div class="stat"><b>DeepFilterNet3</b><small>Neural core</small></div><div class="stat"><b>48 kHz</b><small>Full-band audio</small></div><div class="stat"><b>0 dB SNR</b><small>Demo input</small></div><div class="stat"><b>Pi 5</b><small>Edge deployment</small></div></div>
+</section>
+
+<section id="demo"><p class="eyebrow mono">Live demo</p><h2>Noisy in. Clear out.</h2>
+<p class="sub">Drop a noisy recording or load the built-in 0 dB sample. The signal runs through the NAAD pipeline and you can A/B the result.</p>
+<div class="card">
+<div id="drop"><b>Drop audio here or click to upload</b><p>.wav / .mp3 / .ogg — or</p><br><button class="btn" id="sample" type="button">▶ Use sample (noisy_0db.wav)</button><input type="file" id="file" accept="audio/*" hidden></div>
+<div class="pipe" id="pipe"><div>Capture</div><div>Pre-process</div><div>STFT + ERB</div><div>DeepFilterNet3</div><div>Post-filter</div><div>Clear Audio</div></div>
+<p id="note" class="mono"></p>
+<div id="out">
+<div class="ctl"><div class="toggle"><button id="bn" class="a n">NOISY</button><button id="be">ENHANCED</button></div><button class="btn ghost" id="pp">Play</button><span class="mono" id="tm" style="color:var(--mut)">0.0 / 0.0 s</span></div>
+<audio id="au" preload="auto"></audio>
+<div class="viz">
+<div class="pane"><h4 style="color:var(--rd)">Noisy · waveform</h4><canvas id="w1"></canvas><i class="ph"></i></div>
+<div class="pane"><h4 style="color:var(--gr)">Enhanced · waveform</h4><canvas id="w2"></canvas><i class="ph"></i></div>
+<div class="pane"><h4 style="color:var(--rd)">Noisy · spectrogram</h4><canvas id="s1"></canvas><i class="ph"></i></div>
+<div class="pane"><h4 style="color:var(--gr)">Enhanced · spectrogram</h4><canvas id="s2"></canvas><i class="ph"></i></div></div>
+<div class="met" style="margin-top:18px" id="met"></div></div>
+</div></section>
+
+<section id="tech"><p class="eyebrow mono">Architecture</p><h2>The signal pipeline</h2>
+<p class="sub">Audio capture → STFT + ERB filterbank → DeepFilterNet3 → adaptive post-filter → clear audio.</p>
+<div class="flow"><div style="background:#e4c9f5">Audio Capture</div><div style="background:#fde9a8">STFT + ERB Filterbank</div><div style="background:#a8ecf5">DeepFilterNet3</div><div style="background:#d0f5a8">Adaptive Post-Filter</div><div style="background:#c5c9f7">Clear Audio</div></div>
+<div class="grid">
+<div class="card"><h3>Pre-processing</h3><p>Resampling, pre-emphasis, framing, windowing and normalization.</p></div>
+<div class="card"><h3>Analysis</h3><p>STFT with perceptual ERB features (log-power) for compact, speech-relevant input.</p></div>
+<div class="card"><h3>DeepFilterNet3</h3><p>ERB encoder, temporal model and decoder predict a mask plus deep-filter coefficients.</p></div>
+<div class="card"><h3>Post-processing</h3><p>Apply estimated filter to the spectrum, then inverse STFT to reconstruct time-domain speech.</p></div></div></section>
+
+<section id="why"><p class="eyebrow mono">Challenge → Solution</p><h2>Why AI beats conventional ANC</h2>
+<div class="cmp">
+<div class="c">Highly dynamic &amp; impulsive defence noise</div><div class="ar">⇄</div><div class="s">AI noise suppression</div>
+<div class="c">Complex noise patterns</div><div class="ar">⇄</div><div class="s">Learns time-frequency features</div>
+<div class="c">Changing acoustic conditions</div><div class="ar">⇄</div><div class="s">Real-time, low-latency processing</div>
+<div class="c">Limited on-device resources</div><div class="ar">⇄</div><div class="s">Edge-ready: quantization + pruning + ONNX/TensorRT</div></div>
+<div class="grid">
+<div class="card"><div class="ic">☀️</div><h3>Solar powered</h3><p>Doesn't depend on an external power source.</p></div>
+<div class="card"><div class="ic">🗣️</div><h3>Multilingual</h3><p>Trained on English and regional languages such as Hindi, tailored for our soldiers.</p></div>
+<div class="card"><div class="ic">📡</div><h3>Real-time edge</h3><p>Low-latency communication without cloud dependency.</p></div>
+<div class="card"><div class="ic">📈</div><h3>Scalable pipeline</h3><p>Deep filtering predicts gains dynamically from learned patterns.</p></div></div></section>
+
+<section id="hw"><p class="eyebrow mono">Stack</p><h2>Hardware &amp; software</h2>
+<div class="grid">
+<div class="card"><h3>Raspberry Pi 5</h3><p>Edge processing</p></div><div class="card"><h3>USB / I²S microphone</h3><p>Audio input</p></div>
+<div class="card"><h3>Speaker / headphones</h3><p>Enhanced output</p></div><div class="card"><h3>USB sound card</h3><p>Optional</p></div>
+<div class="card"><h3>5V 3A supply</h3><p>Power</p></div><div class="card"><h3>Python · PyTorch · Rust</h3><p>Software components</p></div></div>
+<div class="cta"><a class="btn" href="#" id="gh">GitHub repository →</a></div></section>
+
+<footer>NAAD · Team <b>The Fifth Law</b> · Smart India Hackathon 2026</footer>
+
+<script>
+// ---- CONFIG ----
+const API_URL = "";   // e.g. "https://your-api.onrender.com/enhance" once backend exists. Empty = sample mode.
+const GITHUB = "#";   // put your repo link here
+document.getElementById('gh').href = GITHUB;
+const $=id=>document.getElementById(id);
+const AC=new (window.AudioContext||window.webkitAudioContext)();
+let urls={n:null,e:null},cur='n',dur=0;
+// FFT
+function fft(re,im){const n=re.length;for(let i=1,j=0;i<n;i++){let b=n>>1;for(;j&b;b>>=1)j^=b;j^=b;if(i<j){[re[i],re[j]]=[re[j],re[i]];[im[i],im[j]]=[im[j],im[i]]}}
+for(let l=2;l<=n;l<<=1){const a=-2*Math.PI/l,wr=Math.cos(a),wi=Math.sin(a);for(let i=0;i<n;i+=l){let cr=1,ci=0;for(let k=0;k<l/2;k++){const u=i+k,v=u+l/2,xr=re[v]*cr-im[v]*ci,xi=re[v]*ci+im[v]*cr;re[v]=re[u]-xr;im[v]=im[u]-xi;re[u]+=xr;im[u]+=xi;const t=cr*wr-ci*wi;ci=cr*wi+ci*wr;cr=t}}}}
+function color(t){t=Math.max(0,Math.min(1,t));const s=[[5,8,30],[40,20,110],[190,40,120],[250,150,40],[255,250,180]],x=t*4,i=Math.min(3,x|0),f=x-i;return s[i].map((v,k)=>v+(s[i+1][k]-v)*f)}
+function setup(c){const r=devicePixelRatio||1,w=c.clientWidth,h=c.clientHeight;c.width=w*r;c.height=h*r;return[c.getContext('2d'),c.width,c.height]}
+function wave(c,d,col){const[x,W,H]=setup(c);x.clearRect(0,0,W,H);x.fillStyle=col;const step=d.length/W;for(let i=0;i<W;i++){let mn=1,mx=-1;for(let j=i*step|0;j<(i+1)*step;j++){const v=d[j];if(v<mn)mn=v;if(v>mx)mx=v}x.fillRect(i,H/2-mx*H/2*.95,1,Math.max(1,(mx-mn)*H/2*.95))}}
+function spec(c,d,lo){const N=1024,hop=512,F=Math.floor((d.length-N)/hop),B=200;const[x,W,H]=setup(c);const img=[];let mxv=-1e9;const re=new Float32Array(N),im=new Float32Array(N);
+for(let f=0;f<F;f++){for(let i=0;i<N;i++){re[i]=d[f*hop+i]*(0.5-0.5*Math.cos(2*Math.PI*i/N));im[i]=0}fft(re,im);const col=new Float32Array(B);for(let b=0;b<B;b++){col[b]=10*Math.log10(re[b]**2+im[b]**2+1e-12);if(col[b]>mxv)mxv=col[b]}img.push(col)}
+return{draw(ref){const top=ref??mxv,o=x.createImageData(W,H);for(let px=0;px<W;px++){const col=img[Math.floor(px/W*F)];for(let py=0;py<H;py++){const v=col[Math.floor((1-py/H)*(B-1))],[r,g,b]=color((v-(top-80))/80),k=(py*W+px)*4;o.data[k]=r;o.data[k+1]=g;o.data[k+2]=b;o.data[k+3]=255}}x.putImageData(o,0,0)},max:mxv,floor(){const e=img.map(c=>c.reduce((a,v)=>a+Math.pow(10,v/10),0));e.sort((a,b)=>a-b);return 10*Math.log10(e[Math.floor(e.length*.1)]+1e-12)}}}
+async function decode(u){return (await AC.decodeAudioData(await (await fetch(u)).arrayBuffer())).getChannelData(0)}
+const stages=[...document.querySelectorAll('#pipe div')];
+async function runPipe(){stages.forEach(s=>s.className='');for(const s of stages){s.className='run';await new Promise(r=>setTimeout(r,450));s.className='ok'}}
+async function show(nUrl,eUrl){urls={n:nUrl,e:eUrl};const[a,b]=await Promise.all([decode(nUrl),decode(eUrl)]);dur=a.length/AC.sampleRate;
+$('out').style.display='block';wave($('w1'),a,'#f87171');wave($('w2'),b,'#4ade80');
+const s1=spec($('s1'),a),s2=spec($('s2'),b);s1.draw();s2.draw(s1.max);
+const red=(s1.floor()-s2.floor()).toFixed(1);let pk=d=>Math.max(...d.filter((_,i)=>i%50==0).map(Math.abs));
+$('met').innerHTML=`<div><b>${red} dB</b><small>Noise-floor reduction</small></div><div><b>${dur.toFixed(1)} s</b><small>Duration</small></div><div><b>${AC.sampleRate/1000} kHz</b><small>Sample rate</small></div><div><b>DFN3</b><small>Model</small></div>`;
+setSrc('n');$('out').scrollIntoView({behavior:'smooth',block:'nearest'})}
+const au=$('au');
+function setSrc(k){const t=au.currentTime,p=!au.paused;cur=k;au.src=urls[k];au.currentTime=t;if(p)au.play();$('bn').className=k=='n'?'a n':'';$('be').className=k=='e'?'a':''}
+$('bn').onclick=()=>setSrc('n');$('be').onclick=()=>setSrc('e');
+$('pp').onclick=async()=>{await AC.resume();au.paused?au.play():au.pause()};
+au.onplay=()=>$('pp').textContent='Pause';au.onpause=()=>$('pp').textContent='Play';au.onended=()=>$('pp').textContent='Play';
+au.ontimeupdate=()=>{const p=au.currentTime/dur;document.querySelectorAll('.ph').forEach(e=>e.style.left=`calc(10px + ${p} * (100% - 22px))`);$('tm').textContent=`${au.currentTime.toFixed(1)} / ${dur.toFixed(1)} s`};
+function note(t){const n=$('note');n.textContent=t;n.style.display=t?'block':'none'}
+$('sample').onclick=async e=>{e.stopPropagation();note('');await runPipe();show('audio/noisy_0db.wav','audio/enhanced.wav')};
+async function handle(f){if(!f)return;note('');const nUrl=URL.createObjectURL(f);
+if(!API_URL){await runPipe();note('Live inference backend not connected yet — showing your file as-is. Use the sample to see the enhanced output.');
+ return show(nUrl,nUrl)}
+try{stages.forEach(s=>s.className='');stages[3].className='run';const fd=new FormData();fd.append('audio',f);const r=await fetch(API_URL,{method:'POST',body:fd});if(!r.ok)throw 0;const eUrl=URL.createObjectURL(await r.blob());await runPipe();show(nUrl,eUrl)}catch{note('Enhancement server unreachable. Try the sample.')}}
+const dz=$('drop');dz.onclick=()=>$('file').click();$('file').onchange=e=>handle(e.target.files[0]);
+dz.ondragover=e=>{e.preventDefault();dz.classList.add('on')};dz.ondragleave=()=>dz.classList.remove('on');
+dz.ondrop=e=>{e.preventDefault();dz.classList.remove('on');handle(e.dataTransfer.files[0])};
+</script></body></html>
