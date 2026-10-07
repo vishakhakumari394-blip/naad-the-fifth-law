@@ -289,7 +289,7 @@ h1 span {
 
 .how-header {
   text-align: center;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
   max-width: 720px;
 }
 
@@ -303,22 +303,41 @@ h1 span {
   font-size: 14px;
 }
 
+.scroll-hint-text {
+  font-size: 12px;
+  color: var(--mut);
+  margin-top: 6px;
+  letter-spacing: 0.02em;
+}
+
 .stage-pills {
   display: flex;
   gap: 8px;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
   flex-wrap: wrap;
   justify-content: center;
 }
 
 .stage-pill {
   font-size: 12px;
-  padding: 5px 12px;
+  padding: 6px 14px;
   border-radius: 4px;
   border: 1px solid var(--line);
   background: var(--panel);
   color: var(--mut);
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
   transition: all 0.2s ease;
+}
+
+.stage-pill:hover {
+  border-color: var(--mut);
+  color: var(--tx);
+}
+
+.stage-pill:focus-visible {
+  outline: 2px solid var(--tx);
+  outline-offset: 2px;
 }
 
 .stage-pill.active {
@@ -339,6 +358,7 @@ h1 span {
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
 }
 
 #how-canvas {
@@ -384,6 +404,76 @@ h1 span {
   color: var(--mut);
 }
 
+/* Play Overlay Container */
+.play-overlay-container {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 8;
+  background: rgba(14, 14, 13, 0.4);
+  transition: opacity 0.3s ease;
+}
+
+/* Centered Big Play Button */
+.btn-play-animation {
+  background: var(--btn-bg);
+  color: var(--btn-tx);
+  border: 1px solid var(--btn-bg);
+  border-radius: 4px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  transition: all 0.15s ease;
+}
+
+.btn-play-animation:hover {
+  background: #ffffff;
+  border-color: #ffffff;
+  transform: scale(1.02);
+}
+
+.btn-play-animation:focus-visible {
+  outline: 2px solid var(--tx);
+  outline-offset: 3px;
+}
+
+.btn-play-animation:active {
+  transform: scale(0.98);
+}
+
+/* Corner Control Button (Top-Right of Canvas) */
+.btn-corner-control {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 9;
+  background: var(--panel);
+  color: var(--tx);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'IBM Plex Mono', monospace;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-corner-control:hover {
+  border-color: var(--mut);
+  background: var(--line);
+}
+
+.btn-corner-control:focus-visible {
+  outline: 2px solid var(--tx);
+  outline-offset: 2px;
+}
+
+/* Stage Caption Bar */
 .how-caption-bar {
   position: absolute;
   bottom: 12px;
@@ -414,6 +504,46 @@ h1 span {
   white-space: nowrap;
 }
 
+/* Progress Bar under Canvas */
+.anim-progress-bar-wrap {
+  width: 100%;
+  max-width: 900px;
+  height: 3px;
+  background: var(--panel);
+  border-radius: 0 0 4px 4px;
+  overflow: hidden;
+  margin-top: -1px;
+  z-index: 4;
+}
+
+.anim-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--enhanced); /* Olive green */
+  transition: width 0.1s linear;
+}
+
+/* Scroll Cue below canvas area */
+.scroll-cue {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--mut);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  animation: bounce-cue 2s infinite;
+  transition: opacity 0.3s ease;
+}
+
+@keyframes bounce-cue {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(4px); }
+}
+
+.scroll-cue.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .reduced-motion-badge {
   color: var(--noisy);
   font-size: 12px;
@@ -422,8 +552,8 @@ h1 span {
 
 @media (max-height: 720px) {
   .how-header p { display: none; }
-  .how-header { margin-bottom: 8px; }
-  .stage-pills { margin-bottom: 8px; }
+  .how-header { margin-bottom: 6px; }
+  .stage-pills { margin-bottom: 6px; }
 }
 
 /* ====================================================
@@ -796,17 +926,18 @@ footer {
       <p class="eyebrow">Signal Transformation</p>
       <h2>How NAAD works</h2>
       <p class="sub">Scroll to trace the speech waveform passing through STFT analysis, DeepFilterNet3 neural processing, and post-filtering.</p>
+      <p id="scroll-hint-header" class="scroll-hint-text mono">Click Play, or scroll down to trace the signal through each stage.</p>
     </div>
 
-    <!-- Stage indicators -->
-    <div class="stage-pills mono">
-      <div id="pill-stage-1" class="stage-pill active">1. Time Domain → STFT</div>
-      <div id="pill-stage-2" class="stage-pill">2. DeepFilterNet3</div>
-      <div id="pill-stage-3" class="stage-pill">3. Post-processing → Clean audio</div>
+    <!-- Stage indicators as accessible buttons -->
+    <div class="stage-pills mono" role="tablist" aria-label="Pipeline Stages">
+      <button type="button" id="pill-stage-1" class="stage-pill active" aria-label="Jump to Stage 1: Time Domain to STFT">1. Time Domain → STFT</button>
+      <button type="button" id="pill-stage-2" class="stage-pill" aria-label="Jump to Stage 2: DeepFilterNet3">2. DeepFilterNet3</button>
+      <button type="button" id="pill-stage-3" class="stage-pill" aria-label="Jump to Stage 3: Post-processing to Clean audio">3. Post-processing → Clean audio</button>
     </div>
 
     <!-- Animation Canvas Container -->
-    <div class="how-canvas-container">
+    <div class="how-canvas-container" id="canvas-wrapper">
       <div id="how-loader" class="how-loader">
         <div class="loader-spinner"></div>
         <span id="loader-text" class="loader-text mono">Loading visualization... 0%</span>
@@ -814,11 +945,33 @@ footer {
 
       <canvas id="how-canvas"></canvas>
 
+      <!-- Centered Play Button Overlay -->
+      <div id="play-overlay-container" class="play-overlay-container" style="display:none;">
+        <button type="button" id="btn-play-animation" class="btn-play-animation mono" aria-label="Play scroll animation">
+          ▶ Play animation
+        </button>
+      </div>
+
+      <!-- Top-Right Corner Control Button (Pause / Play / Replay) -->
+      <button type="button" id="btn-corner-control" class="btn-corner-control mono" style="display:none;" aria-label="Pause animation">
+        ⏸ Pause
+      </button>
+
       <!-- Stage Caption Bar -->
       <div class="how-caption-bar">
         <div class="caption-dot"></div>
         <span id="caption-text" class="caption-label mono">Time Domain → STFT</span>
       </div>
+    </div>
+
+    <!-- Thin Progress Bar under Canvas -->
+    <div class="anim-progress-bar-wrap">
+      <div id="anim-progress-fill" class="anim-progress-fill"></div>
+    </div>
+
+    <!-- Animated Scroll ↓ Cue -->
+    <div id="scroll-cue" class="scroll-cue mono">
+      Scroll ↓
     </div>
 
     <!-- Reduced Motion Notice -->
@@ -1282,7 +1435,6 @@ initSampleDemo();
 
 // ====================================================
 // HOW NAAD WORKS — CANVAS SCROLL ANIMATION SCRIPT
-// (UNTOUCHED SCROLL LOGIC / FRAME PATHS)
 // ====================================================
 (function initHowNaadWorks() {
   const canvas = document.getElementById('how-canvas');
@@ -1291,6 +1443,14 @@ initSampleDemo();
   const loader = document.getElementById('how-loader');
   const loaderText = document.getElementById('loader-text');
   const section = document.getElementById('how');
+
+  // Interactive Controls & Hints Elements
+  const playOverlayContainer = document.getElementById('play-overlay-container');
+  const btnPlayAnimation = document.getElementById('btn-play-animation');
+  const btnCornerControl = document.getElementById('btn-corner-control');
+  const animProgressFill = document.getElementById('anim-progress-fill');
+  const scrollCue = document.getElementById('scroll-cue');
+  const canvasWrapper = document.getElementById('canvas-wrapper');
 
   // Five image sequence directories & frame counts
   const clips = [
@@ -1326,6 +1486,229 @@ initSampleDemo();
   // Accessibility: prefers-reduced-motion check
   const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
   let isReducedMotion = reducedMotionQuery.matches;
+
+  // Auto-scroll controller state
+  let autoScrollRAF = null;
+  let isAutoScrolling = false;
+  let autoScrollStartTime = null;
+  let autoScrollStartPos = 0;
+  let autoScrollTargetPos = 0;
+  let autoScrollDuration = 14000; // 14s total auto-scroll duration
+  let userHasInteracted = false;
+
+  // Calculate Section bounds in document coordinates
+  function getSectionScrollBounds() {
+    const rect = section.getBoundingClientRect();
+    const startY = window.scrollY + rect.top;
+    const scrollableHeight = rect.height - window.innerHeight;
+    const endY = startY + scrollableHeight;
+    return { startY, endY, scrollableHeight };
+  }
+
+  // Get normalized scroll progress (0.0 to 1.0)
+  function getScrollProgress() {
+    const rect = section.getBoundingClientRect();
+    const scrollableHeight = rect.height - window.innerHeight;
+    if (scrollableHeight <= 0) return 0;
+    const scrolled = -rect.top;
+    return Math.max(0, Math.min(1, scrolled / scrollableHeight));
+  }
+
+  // Smooth Ease-In-Out Quadratic function
+  function easeInOutQuad(t) {
+    return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+  }
+
+  // Stop current auto-scrolling
+  function stopAutoScroll() {
+    if (autoScrollRAF) {
+      cancelAnimationFrame(autoScrollRAF);
+      autoScrollRAF = null;
+    }
+    isAutoScrolling = false;
+    updateControlButtonsUI();
+  }
+
+  // Auto-scroll step loop
+  function autoScrollStep(timestamp) {
+    if (!autoScrollStartTime) autoScrollStartTime = timestamp;
+    const elapsed = timestamp - autoScrollStartTime;
+    const progress = Math.min(1, elapsed / autoScrollDuration);
+    const easedProgress = easeInOutQuad(progress);
+
+    const currentY = autoScrollStartPos + (autoScrollTargetPos - autoScrollStartPos) * easedProgress;
+    window.scrollTo(0, currentY);
+
+    if (progress < 1 && isAutoScrolling) {
+      autoScrollRAF = requestAnimationFrame(autoScrollStep);
+    } else {
+      stopAutoScroll();
+      // Replay state if reached end of section
+      const bounds = getSectionScrollBounds();
+      if (Math.abs(window.scrollY - bounds.endY) < 15) {
+        showReplayState();
+      }
+    }
+  }
+
+  // Launch smooth auto-scroll to target Y
+  function startAutoScroll(fromY, toY, durationMs) {
+    stopAutoScroll();
+
+    if (isReducedMotion) {
+      // Reduced motion fallback: instant scroll jump
+      window.scrollTo({ top: toY, behavior: 'instant' });
+      updateOnScroll();
+      return;
+    }
+
+    isAutoScrolling = true;
+    autoScrollStartPos = fromY;
+    autoScrollTargetPos = toY;
+    autoScrollDuration = durationMs || 14000;
+    autoScrollStartTime = null;
+
+    hideScrollCues();
+    updateControlButtonsUI();
+    autoScrollRAF = requestAnimationFrame(autoScrollStep);
+  }
+
+  // Hide hint & cue elements on user interaction
+  function hideScrollCues() {
+    userHasInteracted = true;
+    if (scrollCue) scrollCue.classList.add('hidden');
+    if (playOverlayContainer) playOverlayContainer.style.display = 'none';
+  }
+
+  // Show Replay button on corner controller
+  function showReplayState() {
+    if (btnCornerControl) {
+      btnCornerControl.style.display = 'block';
+      btnCornerControl.textContent = '↻ Replay';
+      btnCornerControl.setAttribute('aria-label', 'Replay animation');
+    }
+  }
+
+  // Update button visibility and labels based on playback state
+  function updateControlButtonsUI() {
+    if (isAutoScrolling) {
+      if (playOverlayContainer) playOverlayContainer.style.display = 'none';
+      if (btnCornerControl) {
+        btnCornerControl.style.display = 'block';
+        btnCornerControl.textContent = '⏸ Pause';
+        btnCornerControl.setAttribute('aria-label', 'Pause animation');
+      }
+    } else {
+      const currentProgress = getScrollProgress();
+      if (currentProgress >= 0.98) {
+        if (btnCornerControl) {
+          btnCornerControl.style.display = 'block';
+          btnCornerControl.textContent = '↻ Replay';
+          btnCornerControl.setAttribute('aria-label', 'Replay animation');
+        }
+      } else if (userHasInteracted || currentProgress > 0.05) {
+        if (btnCornerControl) {
+          btnCornerControl.style.display = 'block';
+          btnCornerControl.textContent = '▶ Play';
+          btnCornerControl.setAttribute('aria-label', 'Resume animation');
+        }
+      } else {
+        // Initial un-interacted state at top of section
+        if (playOverlayContainer && loadedCount === totalFrames) {
+          playOverlayContainer.style.display = 'flex';
+        }
+        if (btnCornerControl) btnCornerControl.style.display = 'none';
+      }
+    }
+  }
+
+  // Toggle Play / Pause / Replay action
+  function handlePlayPauseAction() {
+    const bounds = getSectionScrollBounds();
+    const currentY = window.scrollY;
+    const currentProgress = getScrollProgress();
+
+    if (isAutoScrolling) {
+      stopAutoScroll();
+    } else {
+      if (currentProgress >= 0.98) {
+        // Replay from top
+        startAutoScroll(bounds.startY, bounds.endY, 14000);
+      } else {
+        // Resume from current scroll position
+        const remainingProgress = 1 - currentProgress;
+        const duration = Math.max(2000, 14000 * remainingProgress);
+        startAutoScroll(currentY, bounds.endY, duration);
+      }
+    }
+  }
+
+  // Cancel auto-scroll on manual user scroll/wheel/touch/key events
+  function onUserScrollInterruption() {
+    if (isAutoScrolling) {
+      stopAutoScroll();
+    }
+    hideScrollCues();
+  }
+
+  window.addEventListener('wheel', onUserScrollInterruption, { passive: true });
+  window.addEventListener('touchstart', onUserScrollInterruption, { passive: true });
+  window.addEventListener('keydown', (e) => {
+    if (['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Space', 'Home', 'End'].includes(e.code)) {
+      onUserScrollInterruption();
+    }
+  });
+
+  // Attach button click events
+  if (btnPlayAnimation) {
+    btnPlayAnimation.onclick = (e) => {
+      e.stopPropagation();
+      handlePlayPauseAction();
+    };
+  }
+
+  if (btnCornerControl) {
+    btnCornerControl.onclick = (e) => {
+      e.stopPropagation();
+      handlePlayPauseAction();
+    };
+  }
+
+  if (canvasWrapper) {
+    canvasWrapper.onclick = (e) => {
+      if (e.target.tagName === 'BUTTON') return;
+      handlePlayPauseAction();
+    };
+  }
+
+  // Jump to specific pipeline stage when a stage pill button is clicked
+  function jumpToStage(stageIndex) {
+    stopAutoScroll();
+    hideScrollCues();
+    const bounds = getSectionScrollBounds();
+
+    let targetProgress = 0;
+    if (stageIndex === 1) targetProgress = 0;
+    else if (stageIndex === 2) targetProgress = STAGE_1_END / totalFrames; // ~0.692
+    else if (stageIndex === 3) targetProgress = STAGE_2_END / totalFrames; // ~0.753
+
+    const targetY = bounds.startY + targetProgress * bounds.scrollableHeight;
+
+    if (isReducedMotion) {
+      window.scrollTo({ top: targetY, behavior: 'instant' });
+      updateOnScroll();
+    } else {
+      startAutoScroll(window.scrollY, targetY, 1200);
+    }
+  }
+
+  const pillStage1 = document.getElementById('pill-stage-1');
+  const pillStage2 = document.getElementById('pill-stage-2');
+  const pillStage3 = document.getElementById('pill-stage-3');
+
+  if (pillStage1) pillStage1.onclick = () => jumpToStage(1);
+  if (pillStage2) pillStage2.onclick = () => jumpToStage(2);
+  if (pillStage3) pillStage3.onclick = () => jumpToStage(3);
 
   // Draw current frame image to canvas, preserving high DPI sharpness and aspect ratio
   function drawFrame(img) {
@@ -1379,19 +1762,19 @@ initSampleDemo();
     const captionText = document.getElementById('caption-text');
 
     if (index < STAGE_1_END) {
-      p1.classList.add('active');
-      p2.classList.remove('active');
-      p3.classList.remove('active');
+      if (p1) p1.classList.add('active');
+      if (p2) p2.classList.remove('active');
+      if (p3) p3.classList.remove('active');
       if (captionText) captionText.textContent = 'Time Domain → STFT';
     } else if (index < STAGE_2_END) {
-      p1.classList.remove('active');
-      p2.classList.add('active');
-      p3.classList.remove('active');
+      if (p1) p1.classList.remove('active');
+      if (p2) p2.classList.add('active');
+      if (p3) p3.classList.remove('active');
       if (captionText) captionText.textContent = 'DeepFilterNet3';
     } else {
-      p1.classList.remove('active');
-      p2.classList.remove('active');
-      p3.classList.add('active');
+      if (p1) p1.classList.remove('active');
+      if (p2) p2.classList.remove('active');
+      if (p3) p3.classList.add('active');
       if (captionText) captionText.textContent = 'Post-processing → Clean audio';
     }
   }
@@ -1417,6 +1800,11 @@ initSampleDemo();
     // Calculate progress between 0 (top of section) and 1 (bottom of section)
     const scrolled = -rect.top;
     const progress = Math.max(0, Math.min(1, scrolled / scrollableHeight));
+
+    // Update Progress Bar
+    if (animProgressFill) {
+      animProgressFill.style.width = `${(progress * 100).toFixed(1)}%`;
+    }
     
     // Map scroll progress to frame index [0 .. totalFrames-1]
     const targetIndex = Math.min(totalFrames - 1, Math.floor(progress * totalFrames));
@@ -1424,6 +1812,13 @@ initSampleDemo();
     if (targetIndex !== currentFrameIndex) {
       renderAtIndex(targetIndex);
     }
+
+    // Hide scroll overlay & hints once user scrolls into animation
+    if (progress > 0.05 && !userHasInteracted) {
+      hideScrollCues();
+    }
+
+    updateControlButtonsUI();
   }
 
   // Preload all frames before user scrubs, showing the first frame immediately
@@ -1448,6 +1843,8 @@ initSampleDemo();
         // Hide preloader once all frames are ready
         if (loadedCount === totalFrames) {
           if (loader) loader.classList.add('hidden');
+          // Show Play Overlay after preloading completes if at top
+          updateControlButtonsUI();
           updateOnScroll();
         }
       };
@@ -1456,6 +1853,7 @@ initSampleDemo();
         loadedCount++;
         if (loadedCount === totalFrames && loader) {
           loader.classList.add('hidden');
+          updateControlButtonsUI();
         }
       };
     });
