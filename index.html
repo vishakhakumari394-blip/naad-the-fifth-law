@@ -13,7 +13,8 @@
 /* ====================================================
    DESIGN SYSTEM & CSS VARIABLES
    Palette: Dark charcoal/black, flat solid surfaces,
-   burnt orange (noisy/accent), olive green (enhanced/clean).
+   warm sand (headings), burnt orange (accent/noisy),
+   olive green (enhanced/clean/eyebrow).
    No gradients, no cyan/blue/purple, no glassmorphism.
    ==================================================== */
 :root {
@@ -26,6 +27,8 @@
   --enhanced: #9aab5c;
   --btn-bg: #e8e4da;
   --btn-tx: #0e0e0d;
+  --head: #d9cba3;       /* Warm sand heading color */
+  --head-accent: #e4572e;/* Burnt orange heading accent */
 }
 
 * {
@@ -52,7 +55,7 @@ h1, h2, h3, h4 {
   text-transform: uppercase;
   font-weight: 700;
   letter-spacing: 0.02em;
-  color: var(--tx);
+  color: var(--head); /* Warm sand for headings */
 }
 
 .mono {
@@ -76,7 +79,7 @@ nav b {
   font-family: 'Barlow Condensed', sans-serif;
   font-size: 22px;
   letter-spacing: 0.1em;
-  color: var(--tx);
+  color: var(--head);
 }
 
 nav a {
@@ -136,8 +139,12 @@ h1 {
   margin-bottom: 18px;
 }
 
-h1 span {
-  color: var(--noisy); /* Burnt orange accent */
+h1 .h1-line1 {
+  color: var(--head); /* Warm sand */
+}
+
+h1 .h1-line2 {
+  color: var(--head-accent); /* Burnt orange */
 }
 
 .sub {
@@ -147,7 +154,7 @@ h1 span {
 }
 
 .eyebrow {
-  color: var(--mut);
+  color: var(--enhanced); /* Olive green #9aab5c */
   font-size: 12px;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -226,7 +233,7 @@ h1 span {
   font-family: 'Barlow Condensed', sans-serif;
   display: block;
   font-size: 26px;
-  color: var(--tx);
+  color: var(--head);
 }
 
 .stat small {
@@ -254,7 +261,7 @@ h1 span {
 .card h3 {
   font-size: 18px;
   margin-bottom: 6px;
-  color: var(--tx);
+  color: var(--head); /* Warm sand for card titles */
 }
 
 .card p {
@@ -267,7 +274,7 @@ h1 span {
    ==================================================== */
 .how-section {
   position: relative;
-  height: 400vh;
+  height: 520vh; /* Scaled scroll distance matching virtual weights */
   margin: 0;
   padding: 0;
   max-width: 100%;
@@ -296,6 +303,7 @@ h1 span {
 .how-header h2 {
   font-size: clamp(26px, 4vw, 42px);
   margin-bottom: 4px;
+  color: var(--head);
 }
 
 .how-header p {
@@ -791,7 +799,7 @@ h1 span {
 .met b {
   font-family: 'Barlow Condensed', sans-serif;
   font-size: 26px;
-  color: var(--enhanced);
+  color: var(--head);
   display: block;
   line-height: 1.1;
 }
@@ -823,7 +831,7 @@ h1 span {
   letter-spacing: 0.05em;
   clip-path: polygon(0 0, 92% 0, 100% 50%, 92% 100%, 0 100%, 8% 50%);
   background: var(--panel);
-  color: var(--tx);
+  color: var(--head);
   border: 1px solid var(--line);
 }
 
@@ -905,7 +913,7 @@ footer {
 <section class="hero">
   <div id="stage3d"></div>
   <p class="eyebrow">Team The Fifth Law · Smart India Hackathon 2026</p>
-  <h1>Noise Adaptive<br><span>AI for Defence</span></h1>
+  <h1><span class="h1-line1">Noise Adaptive</span><br><span class="h1-line2">AI for Defence</span></h1>
   <p class="sub" style="margin-top:22px">A hybrid AI-driven active noise cancellation system that suppresses continuous <i>and</i> sudden impulsive noise while preserving speech intelligibility — running fully on the edge.</p>
   <div class="cta">
     <a class="btn" href="#demo">Try the enhancer ↓</a>
@@ -1461,12 +1469,21 @@ initSampleDemo();
     { folder: 'cleaned_clip5', count: 80 }
   ];
 
-  // Stage boundaries in terms of frame index:
-  // Stage 1: Time Domain → STFT (clip 1, clip 2 & clip 3 -> frames 0..224)
-  // Stage 2: DeepFilterNet3 (clip 4 -> frames 225..244)
-  // Stage 3: Post-processing → Clean audio (clip 5 -> frames 245..324)
-  const STAGE_1_END = 225; // 80 + 45 + 100
-  const STAGE_2_END = 245; // 225 + 20
+  // Clip start indices in the preloaded images array
+  const clipStartIndices = [0, 80, 125, 225, 245];
+  const clipCounts = [80, 45, 100, 20, 80];
+
+  // Virtual frame weights for piecewise-linear scroll scrubbing:
+  // clip1 = 80, clip2 = 45, clip3 = 100, clip4 = 110 (slowed down!), clip5 = 80
+  // Total virtual frames = 415
+  const TOTAL_VIRTUAL_FRAMES = 415;
+
+  // Stage boundaries in terms of virtual position vPos [0 .. 415]:
+  // Stage 1: Time Domain → STFT (clip1, clip2 & clip3 -> vPos 0..225)
+  // Stage 2: DeepFilterNet3 (clip4 -> vPos 225..335)
+  // Stage 3: Post-processing → Clean audio (clip5 -> vPos 335..415)
+  const V_STAGE_1_END = 225; // 80 + 45 + 100
+  const V_STAGE_2_END = 335; // 225 + 110
 
   // Generate complete list of frame file paths
   const framePaths = [];
@@ -1477,10 +1494,9 @@ initSampleDemo();
     }
   });
 
-  const totalFrames = framePaths.length;
+  const totalFrames = framePaths.length; // 325 actual frame files
   const images = new Array(totalFrames);
   let loadedCount = 0;
-  let currentFrameIndex = -1;
   let rAFScheduled = false;
 
   // Accessibility: prefers-reduced-motion check
@@ -1493,7 +1509,7 @@ initSampleDemo();
   let autoScrollStartTime = null;
   let autoScrollStartPos = 0;
   let autoScrollTargetPos = 0;
-  let autoScrollDuration = 14000; // 14s total auto-scroll duration
+  let autoScrollDuration = 18200; // 18.2s total auto-scroll scaled to 520vh height
   let userHasInteracted = false;
 
   // Calculate Section bounds in document coordinates
@@ -1565,7 +1581,7 @@ initSampleDemo();
     isAutoScrolling = true;
     autoScrollStartPos = fromY;
     autoScrollTargetPos = toY;
-    autoScrollDuration = durationMs || 14000;
+    autoScrollDuration = durationMs || 18200;
     autoScrollStartTime = null;
 
     hideScrollCues();
@@ -1633,11 +1649,11 @@ initSampleDemo();
     } else {
       if (currentProgress >= 0.98) {
         // Replay from top
-        startAutoScroll(bounds.startY, bounds.endY, 14000);
+        startAutoScroll(bounds.startY, bounds.endY, 18200);
       } else {
         // Resume from current scroll position
         const remainingProgress = 1 - currentProgress;
-        const duration = Math.max(2000, 14000 * remainingProgress);
+        const duration = Math.max(2000, 18200 * remainingProgress);
         startAutoScroll(currentY, bounds.endY, duration);
       }
     }
@@ -1689,8 +1705,8 @@ initSampleDemo();
 
     let targetProgress = 0;
     if (stageIndex === 1) targetProgress = 0;
-    else if (stageIndex === 2) targetProgress = STAGE_1_END / totalFrames; // ~0.692
-    else if (stageIndex === 3) targetProgress = STAGE_2_END / totalFrames; // ~0.753
+    else if (stageIndex === 2) targetProgress = V_STAGE_1_END / TOTAL_VIRTUAL_FRAMES; // ~0.542
+    else if (stageIndex === 3) targetProgress = V_STAGE_2_END / TOTAL_VIRTUAL_FRAMES; // ~0.807
 
     const targetY = bounds.startY + targetProgress * bounds.scrollableHeight;
 
@@ -1698,7 +1714,7 @@ initSampleDemo();
       window.scrollTo({ top: targetY, behavior: 'instant' });
       updateOnScroll();
     } else {
-      startAutoScroll(window.scrollY, targetY, 1200);
+      startAutoScroll(window.scrollY, targetY, 1400);
     }
   }
 
@@ -1710,20 +1726,19 @@ initSampleDemo();
   if (pillStage2) pillStage2.onclick = () => jumpToStage(2);
   if (pillStage3) pillStage3.onclick = () => jumpToStage(3);
 
-  // Draw current frame image to canvas, preserving high DPI sharpness and aspect ratio
-  function drawFrame(img) {
-    if (!img || !img.complete) return;
+  // Smooth Cross-Fading Sub-frame Renderer
+  // Draws img1 at 100% opacity, and img2 on top with globalAlpha = alpha for smooth sub-frame interpolation
+  function drawSubFrame(img1, img2, alpha) {
+    if (!img1 || !img1.complete) return;
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
 
-    // Get display size of canvas
     const rect = canvas.getBoundingClientRect();
     const cssW = rect.width;
     const cssH = rect.height;
 
     if (cssW === 0 || cssH === 0) return;
 
-    // Set internal resolution scaled by High DPI ratio
     if (canvas.width !== Math.floor(cssW * dpr) || canvas.height !== Math.floor(cssH * dpr)) {
       canvas.width = Math.floor(cssW * dpr);
       canvas.height = Math.floor(cssH * dpr);
@@ -1733,8 +1748,7 @@ initSampleDemo();
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, cssW, cssH);
 
-    // Maintain 16:9 aspect ratio containment
-    const imgAspect = (img.naturalWidth || img.width) / (img.naturalHeight || img.height);
+    const imgAspect = (img1.naturalWidth || img1.width) / (img1.naturalHeight || img1.height);
     const canvasAspect = cssW / cssH;
 
     let drawW, drawH, offsetX, offsetY;
@@ -1750,23 +1764,32 @@ initSampleDemo();
       offsetY = (cssH - drawH) / 2;
     }
 
-    ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
+    // Base frame (floor) at 100% opacity
+    ctx.globalAlpha = 1.0;
+    ctx.drawImage(img1, offsetX, offsetY, drawW, drawH);
+
+    // Blended next frame on top with fractional alpha
+    if (img2 && img2.complete && alpha > 0.001 && img1 !== img2) {
+      ctx.globalAlpha = alpha;
+      ctx.drawImage(img2, offsetX, offsetY, drawW, drawH);
+    }
+
     ctx.restore();
   }
 
-  // Update active stage pill and bottom caption text based on current frame index
-  function updateStageCaption(index) {
+  // Update active stage pill and bottom caption text based on virtual frame position vPos
+  function updateStageCaption(vPos) {
     const p1 = document.getElementById('pill-stage-1');
     const p2 = document.getElementById('pill-stage-2');
     const p3 = document.getElementById('pill-stage-3');
     const captionText = document.getElementById('caption-text');
 
-    if (index < STAGE_1_END) {
+    if (vPos < V_STAGE_1_END) {
       if (p1) p1.classList.add('active');
       if (p2) p2.classList.remove('active');
       if (p3) p3.classList.remove('active');
       if (captionText) captionText.textContent = 'Time Domain → STFT';
-    } else if (index < STAGE_2_END) {
+    } else if (vPos < V_STAGE_2_END) {
       if (p1) p1.classList.remove('active');
       if (p2) p2.classList.add('active');
       if (p3) p3.classList.remove('active');
@@ -1779,17 +1802,7 @@ initSampleDemo();
     }
   }
 
-  // Render frame at target index
-  function renderAtIndex(index) {
-    if (index < 0 || index >= totalFrames) return;
-    currentFrameIndex = index;
-    if (images[index] && images[index].complete) {
-      drawFrame(images[index]);
-    }
-    updateStageCaption(index);
-  }
-
-  // Map user's vertical scroll position to frame index
+  // Map user's vertical scroll position to virtual position & sub-frame cross-fading
   function updateOnScroll() {
     if (isReducedMotion) return;
     const rect = section.getBoundingClientRect();
@@ -1806,12 +1819,46 @@ initSampleDemo();
       animProgressFill.style.width = `${(progress * 100).toFixed(1)}%`;
     }
     
-    // Map scroll progress to frame index [0 .. totalFrames-1]
-    const targetIndex = Math.min(totalFrames - 1, Math.floor(progress * totalFrames));
+    // Piecewise-linear mapping from scroll progress -> virtual position vPos [0 .. 415]
+    const vPos = progress * TOTAL_VIRTUAL_FRAMES;
 
-    if (targetIndex !== currentFrameIndex) {
-      renderAtIndex(targetIndex);
+    let clipIdx = 0;
+    let localFrac = 0;
+
+    if (vPos < 80) {
+      clipIdx = 0;
+      localFrac = vPos / 80;
+    } else if (vPos < 125) {
+      clipIdx = 1;
+      localFrac = (vPos - 80) / 45;
+    } else if (vPos < 225) {
+      clipIdx = 2;
+      localFrac = (vPos - 125) / 100;
+    } else if (vPos < 335) {
+      clipIdx = 3; // Clip 4 (20 actual frames stretched over 110 virtual frames!)
+      localFrac = (vPos - 225) / 110;
+    } else {
+      clipIdx = 4;
+      localFrac = Math.min(1, (vPos - 335) / 80);
     }
+
+    const startIdx = clipStartIndices[clipIdx];
+    const count = clipCounts[clipIdx];
+
+    // Compute fractional frame index within target clip
+    const clipFrame = Math.min(count - 1, Math.max(0, localFrac * (count - 1)));
+    const localInt = Math.floor(clipFrame);
+    const alpha = clipFrame - localInt;
+
+    const globalIdx1 = startIdx + localInt;
+    const globalIdx2 = (localInt + 1 < count) ? (startIdx + localInt + 1) : globalIdx1;
+
+    // Draw base frame + blended sub-frame
+    if (images[globalIdx1] && images[globalIdx1].complete) {
+      drawSubFrame(images[globalIdx1], images[globalIdx2], alpha);
+    }
+
+    updateStageCaption(vPos);
 
     // Hide scroll overlay & hints once user scrolls into animation
     if (progress > 0.05 && !userHasInteracted) {
@@ -1833,7 +1880,8 @@ initSampleDemo();
 
         // Show first frame as soon as it finishes downloading
         if (idx === 0) {
-          renderAtIndex(0);
+          drawSubFrame(images[0], images[0], 0);
+          updateStageCaption(0);
         }
 
         // Update preloader progress bar percentage
@@ -1843,7 +1891,6 @@ initSampleDemo();
         // Hide preloader once all frames are ready
         if (loadedCount === totalFrames) {
           if (loader) loader.classList.add('hidden');
-          // Show Play Overlay after preloading completes if at top
           updateControlButtonsUI();
           updateOnScroll();
         }
@@ -1865,7 +1912,8 @@ initSampleDemo();
     const notice = document.getElementById('reduced-motion-notice');
     if (isReducedMotion) {
       if (notice) notice.style.display = 'block';
-      renderAtIndex(0);
+      if (images[0]) drawSubFrame(images[0], images[0], 0);
+      updateStageCaption(0);
     } else {
       if (notice) notice.style.display = 'none';
       updateOnScroll();
@@ -1885,9 +1933,7 @@ initSampleDemo();
 
   // Redraw current frame on window resize to preserve high-DPI scaling
   window.addEventListener('resize', () => {
-    if (currentFrameIndex >= 0 && images[currentFrameIndex]) {
-      drawFrame(images[currentFrameIndex]);
-    }
+    updateOnScroll();
   });
 
   if (reducedMotionQuery.addEventListener) {
