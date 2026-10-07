@@ -5,7 +5,7 @@
 
 A hybrid AI-driven active noise cancellation (ANC) system for defence communication. It combines lightweight deep-learning speech enhancement (DeepFilterNet3) with real-time signal processing to suppress both continuous and sudden impulsive noise while preserving speech intelligibility, running fully on the edge.
 
-**Live demo:** https://YOUR-SITE.onrender.com
+**Live demo:** https://naad-the-fifth-law.onrender.com
 
 ## What this website shows
 
